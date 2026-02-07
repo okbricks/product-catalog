@@ -22,8 +22,31 @@
   const priceTiersEl = document.getElementById('priceTiers');
   const addPriceTierBtn = document.getElementById('addPriceTier');
 
+  // 配置相关元素
+  const configForm = document.getElementById('configForm');
+  const siteTitleInput = document.getElementById('siteTitle');
+  const siteDescInput = document.getElementById('siteDesc');
+  const socialLinkList = document.getElementById('socialLinkList');
+  const addSocialLinkBtn = document.getElementById('addSocialLink');
+  const exportConfigBtn = document.getElementById('exportConfig');
+
   let products = [];
+  let siteConfig = { site: { title: '', description: '' }, links: [] };
   var imageFiles = {}; // id -> File (本地上传的图片)
+
+  // 支持的社交链接类型
+  const linkTypes = [
+    { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'telegram', label: 'Telegram' },
+    { value: 'wechat', label: '微信' },
+    { value: 'email', label: '邮箱' },
+    { value: 'website', label: '网站' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'twitter', label: 'X/Twitter' },
+    { value: 'youtube', label: 'YouTube' },
+    { value: 'tiktok', label: 'TikTok' }
+  ];
 
   function showPanel(showAdmin) {
     if (ADMIN_PASSWORD && !showAdmin) {
@@ -39,6 +62,7 @@
     if (!ADMIN_PASSWORD) {
       showPanel(true);
       loadProducts();
+      loadConfig();
       return;
     }
     var pwd = adminPasswordInput.value.trim();
@@ -46,6 +70,7 @@
       loginError.hidden = true;
       showPanel(true);
       loadProducts();
+      loadConfig();
     } else {
       loginError.textContent = '密码错误';
       loginError.hidden = false;
@@ -77,6 +102,121 @@
         products = [];
         renderTable();
       });
+  }
+
+  // 配置相关功能
+  function loadConfig() {
+    fetch('data/config.json')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        siteConfig = data || { site: {}, links: [] };
+        renderConfigForm();
+      })
+      .catch(function () {
+        siteConfig = { site: { title: '', description: '' }, links: [] };
+        renderConfigForm();
+      });
+  }
+
+  function renderConfigForm() {
+    if (siteTitleInput) siteTitleInput.value = (siteConfig.site && siteConfig.site.title) || '';
+    if (siteDescInput) siteDescInput.value = (siteConfig.site && siteConfig.site.description) || '';
+    renderSocialLinks();
+  }
+
+  function renderSocialLinks() {
+    if (!socialLinkList) return;
+    var links = siteConfig.links || [];
+    if (!links.length) {
+      links = [{ type: 'whatsapp', url: '', label: '' }];
+    }
+    socialLinkList.innerHTML = links.map(function(link, index) {
+      var typeOptions = linkTypes.map(function(t) {
+        return '<option value="' + t.value + '"' + (t.value === link.type ? ' selected' : '') + '>' + t.label + '</option>';
+      }).join('');
+      return (
+        '<div class="social-link-item" data-index="' + index + '">' +
+        '<select class="link-type">' + typeOptions + '</select>' +
+        '<input type="url" class="link-url" value="' + escapeAttr(link.url || '') + '" placeholder="链接地址" />' +
+        '<input type="text" class="link-label" value="' + escapeAttr(link.label || '') + '" placeholder="显示名称(可选)" />' +
+        '<button type="button" class="btn-remove-link" title="删除">×</button>' +
+        '</div>'
+      );
+    }).join('');
+    bindSocialLinkEvents();
+  }
+
+  function bindSocialLinkEvents() {
+    if (!socialLinkList) return;
+    socialLinkList.querySelectorAll('.btn-remove-link').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var item = btn.closest('.social-link-item');
+        if (socialLinkList.querySelectorAll('.social-link-item').length > 1) {
+          item.remove();
+        }
+      });
+    });
+  }
+
+  function getSocialLinks() {
+    if (!socialLinkList) return [];
+    var links = [];
+    socialLinkList.querySelectorAll('.social-link-item').forEach(function(el) {
+      var type = el.querySelector('.link-type').value;
+      var url = el.querySelector('.link-url').value.trim();
+      var label = el.querySelector('.link-label').value.trim();
+      if (url) {
+        links.push({ type: type, url: url, label: label || linkTypes.find(function(t) { return t.value === type; }).label });
+      }
+    });
+    return links;
+  }
+
+  if (addSocialLinkBtn) {
+    addSocialLinkBtn.addEventListener('click', function() {
+      var typeOptions = linkTypes.map(function(t) {
+        return '<option value="' + t.value + '">' + t.label + '</option>';
+      }).join('');
+      var newItem = document.createElement('div');
+      newItem.className = 'social-link-item';
+      newItem.innerHTML = (
+        '<select class="link-type">' + typeOptions + '</select>' +
+        '<input type="url" class="link-url" value="" placeholder="链接地址" />' +
+        '<input type="text" class="link-label" value="" placeholder="显示名称(可选)" />' +
+        '<button type="button" class="btn-remove-link" title="删除">×</button>'
+      );
+      socialLinkList.appendChild(newItem);
+      bindSocialLinkEvents();
+      newItem.querySelector('.link-url').focus();
+    });
+  }
+
+  if (configForm) {
+    configForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      siteConfig.site = {
+        title: siteTitleInput.value.trim(),
+        description: siteDescInput.value.trim()
+      };
+      siteConfig.links = getSocialLinks();
+      alert('设置已保存！请点击「导出 config.json」下载配置文件并替换服务器上的文件。');
+    });
+  }
+
+  if (exportConfigBtn) {
+    exportConfigBtn.addEventListener('click', function() {
+      siteConfig.site = {
+        title: siteTitleInput.value.trim(),
+        description: siteDescInput.value.trim()
+      };
+      siteConfig.links = getSocialLinks();
+      var blob = new Blob([JSON.stringify(siteConfig, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'config.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
   }
 
   // 将旧格式(price1, price50)转换为新格式(prices数组)

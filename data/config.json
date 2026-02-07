@@ -1,0 +1,18 @@
+{
+  "site": {
+    "title": "产品目录",
+    "description": "优质积木产品，批发零售"
+  },
+  "links": [
+    {
+      "type": "whatsapp",
+      "url": "https://wa.me/1234567890",
+      "label": "WhatsApp"
+    },
+    {
+      "type": "website",
+      "url": "https://example.com",
+      "label": "官网"
+    }
+  ]
+}

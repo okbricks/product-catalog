@@ -31,6 +31,29 @@
 
     <main class="admin-main">
       <section class="admin-section">
+        <h2>网站设置</h2>
+        <form id="configForm" class="admin-form">
+          <div class="form-row">
+            <label for="siteTitle">网站标题</label>
+            <input type="text" id="siteTitle" placeholder="产品目录" />
+          </div>
+          <div class="form-row">
+            <label for="siteDesc">网站描述</label>
+            <input type="text" id="siteDesc" placeholder="优质积木产品，批发零售" />
+          </div>
+          <div class="form-row">
+            <label>社交链接</label>
+            <div class="social-link-list" id="socialLinkList"></div>
+            <button type="button" id="addSocialLink" class="btn btn-add-tier">+ 添加链接</button>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">保存设置</button>
+            <button type="button" id="exportConfig" class="btn btn-secondary">导出 config.json</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="admin-section">
         <h2>添加 / 编辑产品</h2>
         <form id="productForm" class="admin-form">
           <input type="hidden" id="productId" />
