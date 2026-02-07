@@ -348,7 +348,7 @@
     productImageFile.value = '';
     imagePreview.hidden = true;
     imagePreview.innerHTML = '';
-    if (p.image && p.image.indexOf('http') === 0) {
+    if (p.image) {
       imagePreview.innerHTML = '<img src="' + escapeAttr(p.image) + '" alt="" />';
       imagePreview.hidden = false;
     }
@@ -413,7 +413,7 @@
 
   function renderTable() {
     productTableBody.innerHTML = products.map(function (p) {
-      var thumb = p.image && (p.image.indexOf('http') === 0 || p.image.startsWith('data:'))
+      var thumb = p.image
         ? '<img class="thumb" src="' + escapeAttr(p.image) + '" alt="" />'
         : '<span class="thumb-none">—</span>';
       return (
@@ -515,5 +515,9 @@
   // 初始化价格层级
   renderPriceTiers([]);
 
-  if (!adminPanel.hidden) loadProducts();
+  // 初始化：如果没有密码或面板可见，加载数据
+  if (!ADMIN_PASSWORD) {
+    loadProducts();
+    loadConfig();
+  }
 })();
