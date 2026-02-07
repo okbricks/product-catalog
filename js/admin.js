@@ -89,17 +89,49 @@
   }
 
   function loadProducts() {
+    // 先尝试从localStorage加载备份
+    try {
+      var backup = localStorage.getItem('products_backup');
+      if (backup) {
+        try {
+          products = JSON.parse(backup);
+          renderTable();
+          fillCategoryDatalist();
+        } catch (e) {
+          console.warn('localStorage备份数据损坏，从服务器加载');
+        }
+      }
+    } catch (e) {
+      console.warn('无法访问localStorage:', e);
+    }
+    
     fetch('data/products.json')
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        products = Array.isArray(data) ? data : [];
+        var serverProducts = Array.isArray(data) ? data : [];
         // 迁移旧数据格式
-        products = products.map(migrateProduct);
+        serverProducts = serverProducts.map(migrateProduct);
+        
+        // 如果服务器数据更新，使用服务器数据
+        if (serverProducts.length > 0 || products.length === 0) {
+          products = serverProducts;
+        }
+        
         renderTable();
         fillCategoryDatalist();
+        
+        // 更新localStorage备份
+        try {
+          localStorage.setItem('products_backup', JSON.stringify(products));
+        } catch (e) {
+          console.warn('无法保存到localStorage:', e);
+        }
       })
       .catch(function () {
-        products = [];
+        // 如果服务器加载失败，使用localStorage备份（如果存在）
+        if (products.length === 0) {
+          products = [];
+        }
         renderTable();
       });
   }
@@ -307,24 +339,63 @@
   function productFromForm() {
     var id = productId.value.trim() || nextId();
     var imageUrl = productImageUrl.value.trim();
+    // 如果选择了本地图片文件，需要转换为base64
     if (productImageFile.files.length) {
-      imageFiles[id] = productImageFile.files[0];
-      imageUrl = 'images/' + id + (productImageFile.files[0].name.match(/\.(jpe?g|png|gif|webp)$/i) ? productImageFile.files[0].name.replace(/.*\./, '.') : '.jpg');
+      var file = productImageFile.files[0];
+      imageFiles[id] = file;
+      // 返回一个Promise，在提交时处理
+      return {
+        id: id,
+        title: productTitle.value.trim(),
+        setNumber: productSetNumber.value.trim() || undefined,
+        category: productCategory.value.trim(),
+        tags: tagsFromString(productTags.value),
+        image: null, // 将在处理文件后设置
+        imageFile: file, // 临时存储文件
+        prices: getPriceTiers()
+      };
     } else if (imageUrl) {
       delete imageFiles[id];
+      return {
+        id: id,
+        title: productTitle.value.trim(),
+        setNumber: productSetNumber.value.trim() || undefined,
+        category: productCategory.value.trim(),
+        tags: tagsFromString(productTags.value),
+        image: imageUrl,
+        prices: getPriceTiers()
+      };
+    } else {
+      // 保持原有图片
+      var existingProduct = products.find(function (p) { return p.id === id; });
+      return {
+        id: id,
+        title: productTitle.value.trim(),
+        setNumber: productSetNumber.value.trim() || undefined,
+        category: productCategory.value.trim(),
+        tags: tagsFromString(productTags.value),
+        image: existingProduct ? existingProduct.image : undefined,
+        prices: getPriceTiers()
+      };
     }
-    return {
-      id: id,
-      title: productTitle.value.trim(),
-      setNumber: productSetNumber.value.trim() || undefined,
-      category: productCategory.value.trim(),
-      tags: tagsFromString(productTags.value),
-      image: imageUrl || (products.find(function (p) { return p.id === id; }) || {}).image,
-      prices: getPriceTiers()
-    };
+  }
+
+  // 将文件转换为base64 data URL
+  function fileToDataURL(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        resolve(e.target.result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   function clearForm() {
+    var currentId = productId.value.trim();
+    var hadFile = productImageFile.files.length > 0;
+    
     productId.value = '';
     productTitle.value = '';
     productSetNumber.value = '';
@@ -336,6 +407,17 @@
     imagePreview.innerHTML = '';
     cancelEditBtn.hidden = true;
     renderPriceTiers([]);
+    
+    // 只有在取消编辑且确实选择了新文件时才清除临时文件引用
+    // 如果文件已经保存（转换为base64），则保留在imageFiles中用于导出ZIP
+    if (currentId && hadFile && imageFiles[currentId]) {
+      // 检查产品是否已保存（图片是否为base64）
+      var savedProduct = products.find(function(p) { return p.id === currentId; });
+      if (!savedProduct || !savedProduct.image || savedProduct.image.indexOf('data:') !== 0) {
+        // 如果产品未保存或图片不是base64，说明是临时文件，可以清除
+        delete imageFiles[currentId];
+      }
+    }
   }
 
   function setForm(p) {
@@ -359,7 +441,27 @@
   productForm.addEventListener('submit', function (e) {
     e.preventDefault();
     var p = productFromForm();
-    if (!p.title || !p.category) return;
+    if (!p.title || !p.category) {
+      alert('请填写产品名称和分类！');
+      return;
+    }
+    
+    // 如果有图片文件，先转换为base64
+    if (p.imageFile) {
+      fileToDataURL(p.imageFile).then(function(dataUrl) {
+        p.image = dataUrl;
+        delete p.imageFile; // 删除临时文件引用
+        saveProduct(p);
+      }).catch(function(error) {
+        console.error('图片转换失败:', error);
+        alert('图片处理失败，请重试！');
+      });
+    } else {
+      saveProduct(p);
+    }
+  });
+
+  function saveProduct(p) {
     var idx = products.findIndex(function (x) { return x.id === p.id; });
     if (idx >= 0) {
       products[idx] = p;
@@ -369,16 +471,63 @@
     renderTable();
     fillCategoryDatalist();
     clearForm();
-  });
+    
+    // 提示用户导出JSON
+    var message = idx >= 0 ? '产品已更新！' : '产品已添加！';
+    message += ' 请点击「导出 products.json」按钮保存到文件。';
+    showNotification(message);
+    
+    // 自动保存到localStorage作为备份
+    try {
+      localStorage.setItem('products_backup', JSON.stringify(products));
+    } catch (e) {
+      console.warn('无法保存到localStorage:', e);
+    }
+  }
+
+  function showNotification(message) {
+    // 创建通知元素
+    var notification = document.createElement('div');
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; color: var(--text); z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 400px;';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(function() {
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.3s';
+      setTimeout(function() {
+        notification.remove();
+      }, 300);
+    }, 3000);
+  }
 
   cancelEditBtn.addEventListener('click', clearForm);
 
   productImageFile.addEventListener('change', function () {
     if (this.files.length) {
-      var url = URL.createObjectURL(this.files[0]);
+      var file = this.files[0];
+      // 检查文件大小（限制为5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片文件过大，请选择小于5MB的图片！');
+        this.value = '';
+        return;
+      }
+      // 检查文件类型
+      if (!file.type.match(/^image\/(jpeg|jpg|png|gif|webp)$/i)) {
+        alert('请选择有效的图片文件（JPG、PNG、GIF或WebP）！');
+        this.value = '';
+        return;
+      }
+      var url = URL.createObjectURL(file);
       imagePreview.innerHTML = '<img src="' + url + '" alt="" />';
       imagePreview.hidden = false;
       productImageUrl.value = '';
+      
+      // 显示文件信息
+      var fileInfo = document.createElement('div');
+      fileInfo.style.cssText = 'font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;';
+      fileInfo.textContent = '文件: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      imagePreview.appendChild(fileInfo);
     } else {
       imagePreview.hidden = true;
       imagePreview.innerHTML = '';
@@ -465,23 +614,32 @@
   }
 
   function exportProductsJson() {
+    if (products.length === 0) {
+      alert('当前没有产品数据可导出！');
+      return;
+    }
+    
     var list = products.map(function (p) {
       return {
         id: p.id,
         title: p.title,
         setNumber: p.setNumber,
-        image: p.image,
+        image: p.image, // 包含base64 data URL或外部URL
         category: p.category,
         tags: p.tags || [],
         prices: p.prices || []
       };
     });
-    var blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+    
+    var jsonString = JSON.stringify(list, null, 2);
+    var blob = new Blob([jsonString], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'products.json';
     a.click();
     URL.revokeObjectURL(a.href);
+    
+    showNotification('products.json 已导出！包含 ' + products.length + ' 个产品。');
   }
 
   exportJsonBtn.addEventListener('click', exportProductsJson);
@@ -498,7 +656,7 @@
       hasAny = true;
     });
     if (!hasAny) {
-      alert('当前没有通过「上传图片」添加的本地图片。请先在编辑产品时选择图片文件，再导出。');
+      alert('当前没有通过「上传图片」添加的本地图片文件。\n\n注意：如果图片已转换为base64保存在products.json中，则无需单独导出图片包。');
       return;
     }
     zip.generateAsync({ type: 'blob' }).then(function (blob) {
@@ -507,6 +665,7 @@
       a.download = 'images.zip';
       a.click();
       URL.revokeObjectURL(a.href);
+      showNotification('图片包已导出！');
     });
   }
 
@@ -520,4 +679,31 @@
     loadProducts();
     loadConfig();
   }
+  
+  // 页面加载时检查是否有localStorage备份
+  window.addEventListener('load', function() {
+    try {
+      var backup = localStorage.getItem('products_backup');
+      if (backup && adminPanel && !adminPanel.hidden) {
+        var backupData = JSON.parse(backup);
+        if (backupData.length > 0) {
+          var serverCount = products.length;
+          if (backupData.length !== serverCount) {
+            showNotification('检测到本地备份数据（' + backupData.length + ' 个产品）。当前显示服务器数据（' + serverCount + ' 个产品）。');
+          }
+        }
+      }
+    } catch (e) {
+      // 忽略错误
+    }
+  });
+  
+  // 页面卸载前保存数据到localStorage
+  window.addEventListener('beforeunload', function() {
+    try {
+      localStorage.setItem('products_backup', JSON.stringify(products));
+    } catch (e) {
+      console.warn('无法保存到localStorage:', e);
+    }
+  });
 })();

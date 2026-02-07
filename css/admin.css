@@ -10,6 +10,22 @@
   align-items: center;
   justify-content: center;
   background: var(--bg);
+  transition: opacity 0.3s ease;
+}
+
+.admin-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .admin-login-box {
@@ -49,10 +65,18 @@
   margin-top: 0.5rem;
 }
 
+.admin-panel {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
 .admin-panel .header-inner {
   display: flex;
   align-items: center;
   gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
 }
 
 .admin-title {
@@ -62,30 +86,36 @@
 
 .admin-main {
   grid-area: main;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
 }
 
 .admin-section {
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .admin-section h2 {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin: 0 0 1rem 0;
-  color: var(--text-muted);
+  margin: 0 0 1.5rem 0;
+  color: var(--text);
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border);
 }
 
 .admin-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .form-row {
@@ -455,9 +485,24 @@
   text-decoration: underline;
 }
 
+@media (max-width: 768px) {
+  .admin-main {
+    padding: 1rem;
+  }
+
+  .admin-section {
+    padding: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .admin-section h2 {
+    font-size: 1.125rem;
+  }
+}
+
 @media (max-width: 640px) {
   .admin-form {
-    padding: 1rem;
+    padding: 0;
   }
 
   .form-row.two-cols {
@@ -479,5 +524,13 @@
   .admin-table th:nth-child(3),
   .admin-table td:nth-child(3) {
     display: none;
+  }
+
+  .admin-toolbar {
+    flex-direction: column;
+  }
+
+  .admin-toolbar .btn {
+    width: 100%;
   }
 }
