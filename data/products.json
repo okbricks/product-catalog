@@ -1,0 +1,122 @@
+[
+  {
+    "id": "1",
+    "title": "死亡之星 75159",
+    "setNumber": "81061",
+    "image": "https://placehold.co/400x400/1a1a2e/eee?text=75159",
+    "category": "星球大战",
+    "tags": ["建筑", "LEPIN"],
+    "prices": [
+      { "qty": 1, "price": "128" },
+      { "qty": 50, "price": "98" }
+    ]
+  },
+  {
+    "id": "2",
+    "title": "死亡之星 II 10143",
+    "setNumber": "86001",
+    "image": "https://placehold.co/400x400/1a1a2e/eee?text=10143",
+    "category": "星球大战",
+    "tags": ["建筑", "LEPIN"],
+    "prices": [
+      { "qty": 1, "price": "268" },
+      { "qty": 50, "price": "218" }
+    ]
+  },
+  {
+    "id": "3",
+    "title": "霍格沃茨特快 75955",
+    "setNumber": "75955",
+    "image": "https://placehold.co/400x400/16213e/eee?text=75955",
+    "category": "哈利波特",
+    "tags": ["火车", "城市"],
+    "prices": [
+      { "qty": 1, "price": "88" },
+      { "qty": 50, "price": "68" }
+    ]
+  },
+  {
+    "id": "4",
+    "title": "迈凯伦 Senna GTR 42123",
+    "setNumber": "40030",
+    "image": "https://placehold.co/400x400/0f0f0f/eee?text=42123",
+    "category": "科技",
+    "tags": ["跑车", "Mouldking"],
+    "prices": [
+      { "qty": 1, "price": "158" },
+      { "qty": 50, "price": "128" }
+    ]
+  },
+  {
+    "id": "5",
+    "title": "无限手套 76191",
+    "setNumber": "76191",
+    "image": "https://placehold.co/400x400/3d0000/eee?text=76191",
+    "category": "漫威",
+    "tags": ["收藏", "DECOOL"],
+    "prices": [
+      { "qty": 1, "price": "68" },
+      { "qty": 50, "price": "52" }
+    ]
+  },
+  {
+    "id": "6",
+    "title": "大众 T1 露营车 10220",
+    "setNumber": "21001",
+    "image": "https://placehold.co/400x400/1a1a1a/eee?text=10220",
+    "category": "创意专家",
+    "tags": ["汽车", "CADA"],
+    "prices": [
+      { "qty": 1, "price": "98" },
+      { "qty": 50, "price": "78" }
+    ]
+  },
+  {
+    "id": "7",
+    "title": "保时捷 911 10295",
+    "setNumber": "10295",
+    "image": "https://placehold.co/400x400/2d2d2d/eee?text=10295",
+    "category": "创意专家",
+    "tags": ["跑车", "LELE"],
+    "prices": [
+      { "qty": 1, "price": "188" },
+      { "qty": 50, "price": "158" }
+    ]
+  },
+  {
+    "id": "8",
+    "title": "狮子骑士城堡 10305",
+    "setNumber": "10305",
+    "image": "https://placehold.co/400x400/4a3728/eee?text=10305",
+    "category": "城堡",
+    "tags": ["创意", "Panlos"],
+    "prices": [
+      { "qty": 1, "price": "328" },
+      { "qty": 50, "price": "278" }
+    ]
+  },
+  {
+    "id": "9",
+    "title": "东方快车 21344",
+    "setNumber": "21344",
+    "image": "https://placehold.co/400x400/2c1810/eee?text=21344",
+    "category": "火车",
+    "tags": ["创意", "Ideas"],
+    "prices": [
+      { "qty": 1, "price": "198" },
+      { "qty": 50, "price": "168" }
+    ]
+  },
+  {
+    "id": "10",
+    "title": "千年隼 75192",
+    "setNumber": "75192",
+    "image": "https://placehold.co/400x400/1a1a2e/eee?text=75192",
+    "category": "星球大战",
+    "tags": ["UCS", "Jiestar"],
+    "prices": [
+      { "qty": 1, "price": "398" },
+      { "qty": 50, "price": "348" }
+    ]
+  }
+]

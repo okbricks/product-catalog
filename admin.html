@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理后台 - 产品目录</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-page">
+  <!-- 可选：在下方设置密码后保存，防止他人打开后台。留空则无需密码 -->
+  <script>window.ADMIN_PASSWORD = '';</script>
+
+  <div id="loginScreen" class="admin-login">
+    <div class="admin-login-box">
+      <h1>管理后台</h1>
+      <p class="admin-login-hint">请输入管理员密码</p>
+      <input type="password" id="adminPassword" class="admin-password-input" placeholder="密码" autocomplete="current-password" />
+      <button type="button" id="adminLoginBtn" class="btn btn-primary">登录</button>
+      <p id="loginError" class="admin-login-error" hidden></p>
+    </div>
+  </div>
+
+  <div id="adminPanel" class="admin-panel" hidden>
+    <header class="header">
+      <div class="header-inner">
+        <a href="index.html" class="logo">← 返回目录</a>
+        <span class="admin-title">管理后台</span>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-section">
+        <h2>添加 / 编辑产品</h2>
+        <form id="productForm" class="admin-form">
+          <input type="hidden" id="productId" />
+          
+          <div class="form-row">
+            <label for="productTitle">产品名称 *</label>
+            <input type="text" id="productTitle" required placeholder="例：死亡之星 75159" />
+          </div>
+          
+          <div class="form-row">
+            <label for="productSetNumber">型号/编号</label>
+            <input type="text" id="productSetNumber" placeholder="例：81061" />
+          </div>
+          
+          <div class="form-row">
+            <label for="productCategory">分类 *</label>
+            <input type="text" id="productCategory" required placeholder="例：星球大战、哈利波特、科技" list="categoryList" />
+            <datalist id="categoryList"></datalist>
+          </div>
+          
+          <div class="form-row">
+            <label for="productTags">标签（逗号分隔）</label>
+            <input type="text" id="productTags" placeholder="例：建筑, LEPIN, 收藏" />
+          </div>
+          
+          <div class="form-row">
+            <label>图片</label>
+            <div class="image-input-group">
+              <input type="url" id="productImageUrl" placeholder="图片 URL（外链）" />
+              <span class="form-or">或</span>
+              <input type="file" id="productImageFile" accept="image/*" />
+              <div id="imagePreview" class="image-preview" hidden></div>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <label>阶梯定价</label>
+            <div class="price-tiers" id="priceTiers">
+              <!-- 动态生成价格层级 -->
+            </div>
+            <button type="button" id="addPriceTier" class="btn btn-add-tier">+ 添加价格层级</button>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">保存产品</button>
+            <button type="button" id="cancelEdit" class="btn btn-ghost" hidden>取消编辑</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="admin-section">
+        <h2>产品列表</h2>
+        <div class="admin-toolbar">
+          <button type="button" id="exportJson" class="btn btn-secondary">导出 products.json</button>
+          <button type="button" id="exportZip" class="btn btn-secondary">导出图片包 (ZIP)</button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>缩略图</th>
+                <th>名称</th>
+                <th>分类</th>
+                <th>价格</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="productTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
