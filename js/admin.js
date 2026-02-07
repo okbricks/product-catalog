@@ -21,6 +21,7 @@
   const categoryList = document.getElementById('categoryList');
   const priceTiersEl = document.getElementById('priceTiers');
   const addPriceTierBtn = document.getElementById('addPriceTier');
+  const setupGitHubBtn = document.getElementById('setupGitHub');
 
   // 配置相关元素
   const configForm = document.getElementById('configForm');
@@ -472,33 +473,90 @@
     fillCategoryDatalist();
     clearForm();
     
-    // 提示用户导出JSON
-    var message = idx >= 0 ? '产品已更新！' : '产品已添加！';
-    message += ' 请点击「导出 products.json」按钮保存到文件。';
-    showNotification(message);
-    
     // 自动保存到localStorage作为备份
     try {
       localStorage.setItem('products_backup', JSON.stringify(products));
     } catch (e) {
       console.warn('无法保存到localStorage:', e);
     }
+    
+    // 尝试自动保存到GitHub（如果配置了API）
+    autoSaveToGitHub();
   }
 
-  function showNotification(message) {
+  // 自动保存到GitHub（通过Vercel API）
+  function autoSaveToGitHub() {
+    // 检查是否配置了GitHub Token
+    var githubToken = localStorage.getItem('github_token');
+    if (!githubToken) {
+      // 如果没有token，提示用户手动导出
+      var message = '产品已保存到本地！';
+      message += ' 如需自动保存到GitHub，请配置GitHub Token。';
+      message += ' 或点击「导出 products.json」手动保存。';
+      showNotification(message);
+      return;
+    }
+
+    // 显示保存中提示
+    showNotification('正在保存到GitHub...', 'info');
+
+    fetch('/api/save-products', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        products: products,
+        token: githubToken
+      })
+    })
+    .then(function(response) {
+      if (!response.ok) {
+        return response.json().then(function(err) {
+          throw new Error(err.error || '保存失败');
+        });
+      }
+      return response.json();
+    })
+    .then(function(data) {
+      showNotification('✅ 产品已自动保存到GitHub！', 'success');
+    })
+    .catch(function(error) {
+      console.error('保存到GitHub失败:', error);
+      showNotification('⚠️ 自动保存失败: ' + error.message + '。请手动导出JSON。', 'error');
+    });
+  }
+
+  function showNotification(message, type) {
+    type = type || 'info';
     // 创建通知元素
     var notification = document.createElement('div');
-    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; color: var(--text); z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 400px;';
+    var bgColor = 'var(--bg-card)';
+    var borderColor = 'var(--border)';
+    
+    if (type === 'success') {
+      borderColor = '#22c55e';
+      bgColor = 'rgba(34, 197, 94, 0.1)';
+    } else if (type === 'error') {
+      borderColor = '#ef4444';
+      bgColor = 'rgba(239, 68, 68, 0.1)';
+    } else if (type === 'info') {
+      borderColor = 'var(--accent)';
+      bgColor = 'rgba(59, 130, 246, 0.1)';
+    }
+    
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' + bgColor + '; border: 1px solid ' + borderColor + '; border-radius: 8px; padding: 1rem 1.5rem; color: var(--text); z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 400px; font-size: 0.875rem;';
     notification.textContent = message;
     document.body.appendChild(notification);
     
+    var duration = type === 'info' ? 2000 : 4000;
     setTimeout(function() {
       notification.style.opacity = '0';
       notification.style.transition = 'opacity 0.3s';
       setTimeout(function() {
         notification.remove();
       }, 300);
-    }, 3000);
+    }, duration);
   }
 
   cancelEditBtn.addEventListener('click', clearForm);
@@ -673,6 +731,37 @@
 
   // 初始化价格层级
   renderPriceTiers([]);
+
+  // GitHub自动保存配置
+  if (setupGitHubBtn) {
+    setupGitHubBtn.addEventListener('click', function() {
+      var currentToken = localStorage.getItem('github_token');
+      var token = prompt('请输入GitHub Personal Access Token:\n\n创建方法：\n1. 访问 https://github.com/settings/tokens\n2. 点击 "Generate new token (classic)"\n3. 勾选 "repo" 权限\n4. 复制生成的token', currentToken || '');
+      
+      if (token && token.trim()) {
+        localStorage.setItem('github_token', token.trim());
+        showNotification('✅ GitHub Token已保存！产品将自动保存到仓库。', 'success');
+        setupGitHubBtn.textContent = '已配置GitHub';
+        setupGitHubBtn.style.background = 'rgba(34, 197, 94, 0.1)';
+        setupGitHubBtn.style.borderColor = '#22c55e';
+      } else if (token === null) {
+        // 用户取消
+      } else {
+        localStorage.removeItem('github_token');
+        showNotification('已清除GitHub Token配置。', 'info');
+        setupGitHubBtn.textContent = '配置GitHub自动保存';
+        setupGitHubBtn.style.background = '';
+        setupGitHubBtn.style.borderColor = '';
+      }
+    });
+
+    // 检查是否已配置token
+    if (localStorage.getItem('github_token')) {
+      setupGitHubBtn.textContent = '已配置GitHub';
+      setupGitHubBtn.style.background = 'rgba(34, 197, 94, 0.1)';
+      setupGitHubBtn.style.borderColor = '#22c55e';
+    }
+  }
 
   // 初始化：如果没有密码或面板可见，加载数据
   if (!ADMIN_PASSWORD) {
